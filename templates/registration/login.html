@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login - Stock Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-4">
+                <div class="card shadow">
+                    <div class="card-body">
+                        <h3 class="card-title text-center mb-4">Stock Manager</h3>
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                            {% endfor %}
+                        {% endif %}
+                        {% if form.errors %}
+                            {% for error in form.non_field_errors %}
+                                <div class="alert alert-danger">{{ error }}</div>
+                            {% endfor %}
+                            {% if not form.non_field_errors %}
+                                <div class="alert alert-danger">Invalid username or password.</div>
+                            {% endif %}
+                        {% endif %}
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="id_username" class="form-label">Username</label>
+                                <input type="text" name="username" class="form-control" id="id_username" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_password" class="form-label">Password</label>
+                                <input type="password" name="password" class="form-control" id="id_password" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Log in</button>
+                        </form>
+                        <p class="text-center mt-3 mb-0">
+                            Don't have an account? <a href="{% url 'register' %}">Register here</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

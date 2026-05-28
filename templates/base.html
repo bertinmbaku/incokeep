@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Stock Manager{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --sidebar-width: 240px;
+            --topbar-height: 56px;
+        }
+        body { background-color: #f5f6fa; font-size: 0.925rem; }
+        /* ---- Sidebar ---- */
+        .sidebar {
+            position: fixed; top: 0; left: 0; bottom: 0;
+            width: var(--sidebar-width); z-index: 1030;
+            background: #1e293b; color: #cbd5e1;
+            transition: transform 0.25s ease;
+            overflow-y: auto;
+        }
+        .sidebar .brand {
+            display: flex; align-items: center; gap: 10px;
+            height: var(--topbar-height); padding: 0 1.25rem;
+            font-size: 1.15rem; font-weight: 700; color: #f1f5f9;
+            border-bottom: 1px solid #334155;
+        }
+        .sidebar .brand i { font-size: 1.4rem; color: #3b82f6; }
+        .sidebar .nav { padding: 0.75rem 0; }
+        .sidebar .nav-item { margin: 0.125rem 0; }
+        .sidebar .nav-link {
+            color: #94a3b8; padding: 0.6rem 1.25rem;
+            display: flex; align-items: center; gap: 12px;
+            border-left: 3px solid transparent;
+            transition: all 0.15s ease;
+        }
+        .sidebar .nav-link:hover { color: #e2e8f0; background: rgba(255,255,255,0.05); }
+        .sidebar .nav-link.active {
+            color: #f1f5f9; background: rgba(59,130,246,0.15);
+            border-left-color: #3b82f6;
+        }
+        .sidebar .nav-link i { font-size: 1.1rem; width: 20px; text-align: center; }
+        /* ---- Top bar ---- */
+        .topbar {
+            position: fixed; top: 0; left: var(--sidebar-width); right: 0;
+            height: var(--topbar-height); z-index: 1025;
+            background: #fff; border-bottom: 1px solid #e2e8f0;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 1.5rem;
+        }
+        .topbar .breadcrumb { margin: 0; }
+        .topbar .user-menu { display: flex; align-items: center; gap: 0.75rem; }
+        /* ---- Main content ---- */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--topbar-height);
+            padding: 1.5rem;
+        }
+        /* ---- Stat cards ---- */
+        .stat-card {
+            border: none; border-radius: 0.625rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .stat-card .icon-box {
+            width: 48px; height: 48px; border-radius: 0.5rem;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem;
+        }
+        /* ---- Mobile ---- */
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .topbar { left: 0; }
+            .main-content { margin-left: 0; }
+            #sidebarBackdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1025; }
+            #sidebarBackdrop.show { display: block; }
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Sidebar backdrop (mobile) -->
+    <div id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <i class="bi bi-cpu"></i> StockManager
+        </div>
+        <ul class="nav flex-column">
+            {% with active=request.resolver_match.url_name %}
+            <li class="nav-item">
+                <a class="nav-link {% if active == 'dashboard' %}active{% endif %}"
+                   href="{% url 'dashboard' %}">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active in 'product-list,product-detail,product-create,product-edit,product-delete' %}active{% endif %}"
+                   href="{% url 'product-list' %}">
+                    <i class="bi bi-box-seam"></i> Products
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active in 'transaction-list,transaction-create' %}active{% endif %}"
+                   href="{% url 'transaction-list' %}">
+                    <i class="bi bi-arrow-left-right"></i> Transactions
+                </a>
+            </li>
+            {% if perms.auth.view_user %}
+            <li class="nav-item">
+                <a class="nav-link {% if active in 'user-list,user-edit,user-delete' %}active{% endif %}"
+                   href="{% url 'user-list' %}">
+                    <i class="bi bi-people"></i> User Management
+                </a>
+            </li>
+            {% endif %}
+            {% endwith %}
+        </ul>
+    </aside>
+
+    <!-- Top bar -->
+    <header class="topbar">
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-outline-secondary btn-sm d-md-none" onclick="toggleSidebar()">
+                <i class="bi bi-list"></i>
+            </button>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    {% block breadcrumb %}{% endblock %}
+                </ol>
+            </nav>
+        </div>
+        <div class="user-menu">
+            {% if user.is_authenticated %}
+                <span class="text-muted small"><i class="bi bi-person-circle me-1"></i>{{ user.username }}</span>
+                <form method="post" action="{% url 'logout' %}" class="m-0">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </button>
+                </form>
+            {% else %}
+                <a href="{% url 'login' %}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-box-arrow-in-right"></i> Login
+                </a>
+            {% endif %}
+        </div>
+    </header>
+
+    <!-- Main content -->
+    <main class="main-content">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebarBackdrop').classList.toggle('show');
+        }
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

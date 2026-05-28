@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}New Transaction - Stock Manager{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'transaction-list' %}">Transactions</a></li>
+<li class="breadcrumb-item active">New</li>
+{% endblock %}
+{% block content %}
+<h1>New Stock Transaction</h1>
+<form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-success">Record Transaction</button>
+    <a href="{% url 'transaction-list' %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

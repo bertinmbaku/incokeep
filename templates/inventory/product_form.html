@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}{{ form.instance.pk|yesno:"Edit Product,Add Product" }} - Stock Manager{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'product-list' %}">Products</a></li>
+<li class="breadcrumb-item active">{% if form.instance.pk %}Edit{% else %}Add{% endif %}</li>
+{% endblock %}
+{% block content %}
+<h1>{% if form.instance.pk %}Edit Product{% else %}Add Product{% endif %}</h1>
+<form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-success">Save</button>
+    <a href="{% url 'product-list' %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}
