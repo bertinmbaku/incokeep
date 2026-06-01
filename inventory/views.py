@@ -58,6 +58,23 @@ class ProductListView(LoginRequiredMixin, ListView):
     template_name = 'inventory/product_list.html'
     context_object_name = 'products'
 
+    def get_queryset(self):
+        queryset = super().get_queryset().select_related('category', 'supplier')
+        q = self.request.GET.get('q', '').strip()
+        if q:
+            queryset = queryset.filter(
+                Q(name__icontains=q) |
+                Q(sku__icontains=q) |
+                Q(category__name__icontains=q) |
+                Q(supplier__name__icontains=q)
+            )
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('q', '')
+        return context
+
 class ProductDetailView(LoginRequiredMixin, DetailView):
     model = Product
     template_name = 'inventory/product_detail.html'
@@ -99,6 +116,22 @@ class TransactionListView(LoginRequiredMixin, ListView):
     model = StockTransaction
     template_name = 'inventory/transaction_list.html'
     context_object_name = 'transactions'
+
+    def get_queryset(self):
+        queryset = super().get_queryset().select_related('product', 'performed_by')
+        q = self.request.GET.get('q', '').strip()
+        if q:
+            queryset = queryset.filter(
+                Q(product__name__icontains=q) |
+                Q(product__sku__icontains=q) |
+                Q(notes__icontains=q)
+            )
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('q', '')
+        return context
 
 class TransactionCreateView(InventoryPermissionRequiredMixin, CreateView):
     permission_required = 'inventory.add_stocktransaction'
@@ -171,6 +204,18 @@ class UserListView(InventoryPermissionRequiredMixin, ListView):
     context_object_name = 'users'
     ordering = ['-date_joined']
     paginate_by = 20
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        q = self.request.GET.get('q', '').strip()
+        if q:
+            queryset = queryset.filter(username__icontains=q)
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('q', '')
+        return context
 
 
 class UserEditView(InventoryPermissionRequiredMixin, UpdateView):

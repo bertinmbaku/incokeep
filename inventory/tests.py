@@ -362,3 +362,157 @@ class CleanupCommandTest(TestCase):
         self.assertTrue(User.objects.filter(username='active_user').exists())
         self.assertTrue(User.objects.filter(username='recent_user').exists())
         self.assertTrue(User.objects.filter(username='stale_user').exists())
+
+
+# -------------------------------------------------------------------
+# Search tests
+# -------------------------------------------------------------------
+class ProductSearchTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user('searcher', password='testpass123')
+        manager_group = Group.objects.get(name='Inventory Managers')
+        self.user.groups.add(manager_group)
+        self.client.login(username='searcher', password='testpass123')
+
+        self.cat_electronics = Category.objects.create(name='Electronics')
+        self.cat_furniture = Category.objects.create(name='Furniture')
+        self.supplier_abc = Supplier.objects.create(name='ABC Supplies')
+        self.supplier_xyz = Supplier.objects.create(name='XYZ Corp')
+
+        Product.objects.create(
+            sku='LAP-001', name='Laptop Pro', category=self.cat_electronics,
+            supplier=self.supplier_abc, unit_price=999.99, quantity_in_stock=10
+        )
+        Product.objects.create(
+            sku='DSK-001', name='Desk Chair', category=self.cat_furniture,
+            supplier=self.supplier_xyz, unit_price=149.99, quantity_in_stock=25
+        )
+        Product.objects.create(
+            sku='MON-001', name='Monitor 4K', category=self.cat_electronics,
+            supplier=self.supplier_abc, unit_price=399.99, quantity_in_stock=8
+        )
+
+    def test_search_by_name_exact(self):
+        response = self.client.get(reverse('product-list'), {'q': 'Laptop Pro'})
+        self.assertContains(response, 'Laptop Pro')
+        self.assertNotContains(response, 'Desk Chair')
+        self.assertNotContains(response, 'Monitor 4K')
+
+    def test_search_by_name_partial(self):
+        response = self.client.get(reverse('product-list'), {'q': 'Desk'})
+        self.assertContains(response, 'Desk Chair')
+        self.assertNotContains(response, 'Laptop Pro')
+
+    def test_search_case_insensitive(self):
+        response = self.client.get(reverse('product-list'), {'q': 'laptop pro'})
+        self.assertContains(response, 'Laptop Pro')
+
+        response = self.client.get(reverse('product-list'), {'q': 'MONITOR'})
+        self.assertContains(response, 'Monitor 4K')
+
+    def test_search_by_sku(self):
+        response = self.client.get(reverse('product-list'), {'q': 'DSK-001'})
+        self.assertContains(response, 'Desk Chair')
+        self.assertNotContains(response, 'Laptop Pro')
+
+    def test_search_by_sku_partial(self):
+        response = self.client.get(reverse('product-list'), {'q': 'LAP'})
+        self.assertContains(response, 'Laptop Pro')
+        self.assertNotContains(response, 'Desk Chair')
+
+    def test_search_by_category(self):
+        response = self.client.get(reverse('product-list'), {'q': 'Furniture'})
+        self.assertContains(response, 'Desk Chair')
+        self.assertNotContains(response, 'Laptop Pro')
+
+    def test_search_by_supplier(self):
+        response = self.client.get(reverse('product-list'), {'q': 'XYZ'})
+        self.assertContains(response, 'Desk Chair')
+        self.assertNotContains(response, 'Laptop Pro')
+
+    def test_search_no_match(self):
+        response = self.client.get(reverse('product-list'), {'q': 'zzznotfound'})
+        self.assertContains(response, 'No products yet.')
+
+    def test_empty_search_returns_all(self):
+        response = self.client.get(reverse('product-list'), {'q': ''})
+        self.assertContains(response, 'Laptop Pro')
+        self.assertContains(response, 'Desk Chair')
+        self.assertContains(response, 'Monitor 4K')
+
+    def test_search_preserves_query_in_input(self):
+        response = self.client.get(reverse('product-list'), {'q': 'Laptop'})
+        self.assertContains(response, 'value="Laptop"')
+
+
+class TransactionSearchTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user('txsearcher', password='testpass123')
+        manager_group = Group.objects.get(name='Inventory Managers')
+        self.user.groups.add(manager_group)
+        self.client.login(username='txsearcher', password='testpass123')
+
+        self.product_a = Product.objects.create(
+            sku='SKU-A', name='Alpha Widget', unit_price=10.00
+        )
+        self.product_b = Product.objects.create(
+            sku='SKU-B', name='Beta Gadget', unit_price=20.00
+        )
+        StockTransaction.objects.create(
+            product=self.product_a, transaction_type='IN',
+            quantity=5, performed_by=self.user, notes='Restock from supplier'
+        )
+        StockTransaction.objects.create(
+            product=self.product_b, transaction_type='OUT',
+            quantity=2, performed_by=self.user, notes='Customer order #1234'
+        )
+
+    def test_search_by_product_name(self):
+        response = self.client.get(reverse('transaction-list'), {'q': 'Alpha'})
+        self.assertContains(response, 'Alpha Widget')
+        self.assertNotContains(response, 'Beta Gadget')
+
+    def test_search_by_product_sku(self):
+        response = self.client.get(reverse('transaction-list'), {'q': 'SKU-B'})
+        self.assertContains(response, 'Beta Gadget')
+        self.assertNotContains(response, 'Alpha Widget')
+
+    def test_search_by_notes(self):
+        response = self.client.get(reverse('transaction-list'), {'q': 'Restock'})
+        self.assertContains(response, 'Restock from supplier')
+        self.assertNotContains(response, 'Customer order')
+
+    def test_search_transactions_case_insensitive(self):
+        response = self.client.get(reverse('transaction-list'), {'q': 'alpha widget'})
+        self.assertContains(response, 'Alpha Widget')
+
+
+class UserSearchTest(TestCase):
+    def setUp(self):
+        self.manager = User.objects.create_user('mgmt', password='testpass123')
+        manager_group = Group.objects.get(name='Inventory Managers')
+        self.manager.groups.add(manager_group)
+        self.client.login(username='mgmt', password='testpass123')
+
+        User.objects.create_user('alice_wonder', email='alice@example.com')
+        User.objects.create_user('bob_builder', email='bob@example.com')
+        User.objects.create_user('charlie_dev', email='charlie@example.com')
+
+    def test_search_by_username(self):
+        response = self.client.get(reverse('user-list'), {'q': 'alice'})
+        self.assertContains(response, 'alice_wonder')
+        self.assertNotContains(response, 'bob_builder')
+        self.assertNotContains(response, 'charlie_dev')
+
+    def test_search_by_username_case_insensitive(self):
+        response = self.client.get(reverse('user-list'), {'q': 'ALICE'})
+        self.assertContains(response, 'alice_wonder')
+
+    def test_search_does_not_match_email(self):
+        response = self.client.get(reverse('user-list'), {'q': 'alice@example.com'})
+        self.assertNotContains(response, 'alice_wonder')
+        self.assertContains(response, 'No users found.')
+
+    def test_search_no_match(self):
+        response = self.client.get(reverse('user-list'), {'q': 'nonexistent'})
+        self.assertContains(response, 'No users found.')
