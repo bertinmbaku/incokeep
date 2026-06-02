@@ -279,7 +279,7 @@ class RegistrationTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Create Account')
 
-    def test_register_creates_inactive_user(self):
+    def test_register_creates_active_user(self):
         response = self.client.post(reverse('register'), {
             'username': 'newhire',
             'email': 'newhire@example.com',
@@ -288,7 +288,7 @@ class RegistrationTest(TestCase):
         })
         self.assertRedirects(response, reverse('login'))
         user = User.objects.get(username='newhire')
-        self.assertFalse(user.is_active)                          # Manager must activate
+        self.assertTrue(user.is_active)                           # Active immediately — no confirmation needed
 
     def test_register_adds_to_staff_group(self):
         self.client.post(reverse('register'), {
@@ -300,33 +300,26 @@ class RegistrationTest(TestCase):
         user = User.objects.get(username='worker')
         self.assertTrue(user.groups.filter(name='Inventory Staff').exists())
 
-    def test_inactive_user_cannot_login(self):
-        # Register
+    def test_registered_user_can_login_immediately(self):
+        # Register — account is active right away
         self.client.post(reverse('register'), {
-            'username': 'pending',
-            'email': 'pending@example.com',
+            'username': 'readynow',
+            'email': 'readynow@example.com',
             'password1': 'ComplexPass123!',
             'password2': 'ComplexPass123!',
         })
-        # Try to log in with correct credentials
-        logged_in = self.client.login(username='pending', password='ComplexPass123!')
-        self.assertFalse(logged_in)                                # Blocked until activated
+        # Should be able to log in immediately with correct credentials
+        logged_in = self.client.login(username='readynow', password='ComplexPass123!')
+        self.assertTrue(logged_in)
 
-    def test_inactive_user_gets_activation_message(self):
-        # Register — account goes to is_active=False
-        self.client.post(reverse('register'), {
-            'username': 'awaiting',
-            'email': 'awaiting@example.com',
+    def test_register_shows_login_message(self):
+        response = self.client.post(reverse('register'), {
+            'username': 'signupuser',
+            'email': 'signupuser@example.com',
             'password1': 'ComplexPass123!',
             'password2': 'ComplexPass123!',
-        })
-        # Try logging in with correct password
-        response = self.client.post(reverse('login'), {
-            'username': 'awaiting',
-            'password': 'ComplexPass123!',
-        })
-        self.assertEqual(response.status_code, 200)                # Stays on login page
-        self.assertContains(response, 'pending activation by a manager')
+        }, follow=True)
+        self.assertContains(response, 'Account created! You can now log in.')
 
 
 # -------------------------------------------------------------------

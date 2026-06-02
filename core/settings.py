@@ -169,6 +169,9 @@ SECURE_REFERRER_POLICY = 'same-origin'
 
 # SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')   # for production behind a proxy that handles SSL termination
 
+# Render-specific: trust the X-Forwarded-Host header
+USE_X_FORWARDED_HOST = True
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

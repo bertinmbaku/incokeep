@@ -181,16 +181,16 @@ class RegisterView(CreateView):
     success_url = reverse_lazy('login')
 
     def form_valid(self, form):
-        # Save user with is_active=False — Manager must activate
+        # Save user as active immediately — no manager confirmation needed
         user = form.save(commit=False)
-        user.is_active = False
+        user.is_active = True
         user.save()
         # Assign to Inventory Staff group
         staff_group = Group.objects.get(name='Inventory Staff')
         user.groups.add(staff_group)
         messages.success(
             self.request,
-            'Account created! A manager will activate it shortly. You will be able to log in once activated.'
+            'Account created! You can now log in.'
         )
         return super().form_valid(form)
 
