@@ -153,6 +153,23 @@ class Command(BaseCommand):
             else:
                 self.stdout.write(f'  = User: {user.username} ({user_data["group"]}) (already exists)')
 
+        # ---------- Superuser ----------
+        admin, created = User.objects.get_or_create(
+            username='tengwei',
+            defaults={
+                'email': 'tengwei@incokeep.example.com',
+                'is_active': True,
+                'is_staff': True,
+                'is_superuser': True,
+            },
+        )
+        if created:
+            admin.set_password('schoolproject')
+            admin.save()
+            self.stdout.write(f'  + Superuser: tengwei')
+        else:
+            self.stdout.write(f'  = Superuser: tengwei (already exists)')
+
         # ---------- Sample Transactions ----------
         if not StockTransaction.objects.exists():
             products = list(Product.objects.all())
@@ -197,5 +214,6 @@ class Command(BaseCommand):
         self.stdout.write(f'  Users:     {User.objects.count()}')
         self.stdout.write(f'  TX Logs:   {StockTransaction.objects.count()}')
         self.stdout.write('\n  Login credentials:')
-        self.stdout.write('    Manager: manager1 / Manager123!')
-        self.stdout.write('    Staff:   staff1   / Staff123!')
+        self.stdout.write('    Superuser: tengwei / schoolproject')
+        self.stdout.write('    Manager:   manager1 / Manager123!')
+        self.stdout.write('    Staff:     staff1   / Staff123!')
