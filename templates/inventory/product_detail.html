@@ -19,7 +19,7 @@
             <li class="list-group-item"><strong>Supplier:</strong> {{ product.supplier.name|default:"-" }}</li>
             <li class="list-group-item"><strong>Quantity in stock:</strong> {{ product.quantity_in_stock }}</li>
             <li class="list-group-item"><strong>Reorder level:</strong> {{ product.reorder_level }}</li>
-            <li class="list-group-item"><strong>Unit price:</strong> ${{ product.unit_price|floatformat:2 }}</li>
+            <li class="list-group-item"><strong>Unit price:</strong> {{ product.unit_price|floatformat:2 }} XAF</li>
         </ul>
     </div>
 </div>

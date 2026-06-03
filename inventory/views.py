@@ -58,6 +58,15 @@ class ProductListView(LoginRequiredMixin, ListView):
     template_name = 'inventory/product_list.html'
     context_object_name = 'products'
 
+    SORT_COLUMNS = {
+        'sku': 'sku',
+        'name': 'name',
+        'category': 'category__name',
+        'quantity': 'quantity_in_stock',
+        'reorder': 'reorder_level',
+        'price': 'unit_price',
+    }
+
     def get_queryset(self):
         queryset = super().get_queryset().select_related('category', 'supplier')
         q = self.request.GET.get('q', '').strip()
@@ -68,11 +77,19 @@ class ProductListView(LoginRequiredMixin, ListView):
                 Q(category__name__icontains=q) |
                 Q(supplier__name__icontains=q)
             )
-        return queryset
+
+        sort = self.request.GET.get('sort', 'name')
+        order = self.request.GET.get('order', 'asc')
+        db_field = self.SORT_COLUMNS.get(sort, 'name')
+        if order == 'desc':
+            db_field = f'-{db_field}'
+        return queryset.order_by(db_field)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['search_query'] = self.request.GET.get('q', '')
+        context['current_sort'] = self.request.GET.get('sort', 'name')
+        context['current_order'] = self.request.GET.get('order', 'asc')
         return context
 
 class ProductDetailView(LoginRequiredMixin, DetailView):
