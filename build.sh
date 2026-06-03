@@ -12,4 +12,7 @@ python manage.py collectstatic --noinput
 echo "=== Running migrations ==="
 python manage.py migrate --noinput
 
+echo "=== Seeding demo data (if empty) ==="
+python manage.py populate_demo_data
+
 echo "=== Build complete ==="
