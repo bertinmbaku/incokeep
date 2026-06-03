@@ -202,3 +202,22 @@ LOGGING = {
         },
     },
 }
+
+# Content Security Policy (django-csp)
+CSP_DEFAULT_SRC = ("'self'",)
+CSP_STYLE_SRC = (
+    "'self'",
+    "'unsafe-inline'",                     # Bootstrap needs inline styles
+    "https://cdn.jsdelivr.net",
+)
+CSP_SCRIPT_SRC = (
+    "'self'",
+    "'unsafe-inline'",                     # Bootstrap JS needs inline scripts
+    "https://cdn.jsdelivr.net",
+)
+CSP_FONT_SRC = (
+    "'self'",
+    "https://cdn.jsdelivr.net",
+)
+CSP_IMG_SRC = ("'self'", "data:")
+CSP_FRAME_SRC = ("'self'",)
